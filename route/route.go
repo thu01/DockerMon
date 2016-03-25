@@ -45,7 +45,8 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
 func Routes() *mux.Router{
     r := mux.NewRouter()
     // Routes consist of a path and a handler function.
-    r.HandleFunc("/", Index)
+    //r.HandleFunc("/", Index)
+    r.PathPrefix("/").Handler(http.FileServer(http.Dir("./client")))
     r.HandleFunc("/register", RegisterPOST).Methods("POST")
     
     return r
