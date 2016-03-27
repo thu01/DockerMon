@@ -2,19 +2,13 @@ package route
 
 import (
     "encoding/json"
-    "html/template"
+    //"html/template"
     "net/http"
     //"path"
-    "os"
-    "path/filepath"
     "fmt"
     "github.com/gorilla/mux"
 )
-
-var templates = template.Must(template.ParseFiles("templates/index.html", 
-                                                  "templates/register.html",
-                                                  "templates/about.html"))
-                                                
+        
 type UserInf struct {
     Username string
     Password string
@@ -26,14 +20,9 @@ type Response struct {
     Message interface{}
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-    cwd, _ := os.Getwd()
-    fmt.Println( filepath.Join( cwd, "template/index.html" ) )
-    err := templates.ExecuteTemplate(w, "index", nil)
-     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
+func NotFound(w http.ResponseWriter, r *http.Request) {
+    fmt.Println("NotFound")
+    http.ServeFile(w, r, "./client/index.html")
 }
 
 func RegisterPOST(w http.ResponseWriter, r *http.Request) {
@@ -44,13 +33,9 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
     password := r.FormValue("password")
     user := &UserInf { username, password, email}
     statusCode := http.StatusOK
-    userJson, err := json.Marshal(user)
-    if err != nil {
-        statusCode = http.StatusInternalServerError
-    }
     
-    fmt.Println(string(userJson))
-    response := &Response{statusCode, userJson}
+    response := &Response{statusCode, user}
+    
     responseJson, err := json.Marshal(response)
     if err != nil {
         fmt.Println(err)
@@ -62,8 +47,15 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
 func Routes() *mux.Router{
     r := mux.NewRouter()
     // Routes consist of a path and a handler function.
-    //r.HandleFunc("/", Index)
     r.HandleFunc("/api/users", RegisterPOST).Methods("POST")
-    r.PathPrefix("/").Handler(http.FileServer(http.Dir("./client")))
+    r.Handle("/", http.FileServer(http.Dir("./client/")))
+    r.PathPrefix("/js/").Handler(http.StripPrefix("/js/", 
+                                 http.FileServer(http.Dir("./client/js/"))))
+    r.PathPrefix("/html/").Handler(http.StripPrefix("/html/",
+                                   http.FileServer(http.Dir("./client/html/"))))
+    r.PathPrefix("/bower_components/").Handler(http.StripPrefix("/bower_components/",
+                                               http.FileServer(http.Dir("./client/bower_components/"))))
+    r.NotFoundHandler = http.HandlerFunc(NotFound)
+    
     return r
 }
