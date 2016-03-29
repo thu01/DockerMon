@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Golang Web App with AngularJS">
+    <meta name="author" content="thu01">
+
+    <title>Go Web Application</title>
+
+</head>
+
+<body ng-app="app">
+    <div ng-include="'html/header.html'"></div>
+    <div ui-view></div>
+    <div ng-include="'html/footer.html'"></div>
+    
+    <script src="bower_components/angular/angular.min.js"></script>
+    <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.min.js"></script>
+    <script src="bower_components/angular-messages/angular-messages.min.js"></script>
+    
+    <!-- Our Website Javascripts -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>

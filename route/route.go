@@ -16,7 +16,7 @@ type UserInf struct {
 }
 
 type Response struct {
-    Code int
+    Status int
     Message interface{}
 }
 
@@ -48,6 +48,8 @@ func Routes() *mux.Router{
     r := mux.NewRouter()
     // Routes consist of a path and a handler function.
     r.HandleFunc("/api/users", RegisterPOST).Methods("POST")
+    
+    //Route for static files
     r.Handle("/", http.FileServer(http.Dir("./client/")))
     r.PathPrefix("/js/").Handler(http.StripPrefix("/js/", 
                                  http.FileServer(http.Dir("./client/js/"))))
@@ -55,6 +57,8 @@ func Routes() *mux.Router{
                                    http.FileServer(http.Dir("./client/html/"))))
     r.PathPrefix("/bower_components/").Handler(http.StripPrefix("/bower_components/",
                                                http.FileServer(http.Dir("./client/bower_components/"))))
+                                               
+    //Route for not-found url
     r.NotFoundHandler = http.HandlerFunc(NotFound)
     
     return r
