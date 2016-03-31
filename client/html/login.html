@@ -1,0 +1,32 @@
+<div>
+    <h1>Login Page</h1>
+    <form name="loginForm" ng-submit="login(user)" >
+		<div class="form-group" ">
+			<label for="username">Username</label>
+			<div>
+                <input type="text" class="form-control" id="username" placeholder="username" name="username"
+                       ng-model="user.username" ng-minlength="3" ng-maxlength="32" ng-pattern="/^[0-9a-zA-z._]*$/" 
+                       ng-model-options="{ updateOn: 'blur' }" required />
+            </div>
+            <div ng-messages="loginForm.username.$error">
+                <div ng-message="minlength">Invalid username</div>
+                <div ng-message="maxlength">Invalid username</div>
+                <div ng-message="pattern">Invalid username</div>
+            </div>
+		</div>
+		<div class="form-group">
+			<label for="password">Password</label>
+            <div>
+				 <input type="password" class="form-control" id="password" placeholder="password" name="password"
+                        ng-model="user.password" ng-minlength="5" ng-maxlength="32" 
+                        ng-model-options="{ updateOn: 'blur', allowInvalid: true}" required/>	
+            </div>
+            <div ng-messages="loginForm.password.$error">
+                <div ng-message="minlength">password too short</div>
+                <div ng-message="maxlength">password too long</div>
+            </div>
+		</div>
+		<input type="submit" value="Login" class="btn btn-primary" 
+               ng-disabled="loginForm.$invalid" />
+	</form>
+</div>

@@ -24,6 +24,11 @@ app.config([
             templateUrl: '/html/home.html',
             controller: 'RegisterController'
         })
+        .state('login', {
+            url: '/login',
+            templateUrl: 'html/login.html',
+            controller: 'LoginController'
+        })
         .state('about',{
             url: '/about',
             templateUrl: '/html/about.html'
@@ -35,6 +40,12 @@ app.config([
 app.factory('UserService', ['$http', '$resource', function UserService($http, $resource) {
     return {
         Register: function(user){
+            console.log(user)
+            var res = $resource('/api/users', user);
+            return res.save().$promise;
+            //return $http.post('http://localhost:8000/api/users', user).then(handleSuccess, handleError);
+        },
+        Login: function(user){
             console.log(user)
             var res = $resource('/api/users', user);
             return res.save().$promise;
@@ -59,6 +70,7 @@ app.controller('RegisterController', ['UserService', '$scope', '$location', func
     $scope.user.verifyPassword='12345';
     $scope.register = function(user) {
         console.log($scope.registerForm.$pending);
+        //If verifyPassword is invalid, the password field will be undefined
         if($scope.registerForm.$pending !== undefined && $scope.registerForm.$pending.username){
             return;
         }
@@ -75,6 +87,26 @@ app.controller('RegisterController', ['UserService', '$scope', '$location', func
         });
     };
 }]);
+
+app.controller('LoginController', ['UserService','$scope', '$location', function(UserService, $scope, $location){
+    $scope.user = {}
+    $scope.user.username = 'thu';
+    $scope.user.password='12345';
+    $scope.login = function(user) {
+        UserService.Login(user).then(function(response){
+            if(response.Status==200) {
+                $location.path('/about');
+            }
+            console.log(response);
+            //TODO: error handling
+        }, function(response){
+            console.log('error');
+            console.log(response);
+            //TODO: error handling
+        });
+    };
+}]);
+
 
 //Custom validation
 app.directive('compareTo', function() {

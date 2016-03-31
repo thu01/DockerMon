@@ -22,6 +22,7 @@ type Response struct {
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
     fmt.Println("NotFound")
+    //TODO: only serve index.html for exposed url, otherwise serve error.html
     http.ServeFile(w, r, "./client/index.html")
 }
 
