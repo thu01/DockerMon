@@ -8,8 +8,14 @@ import (
     "fmt"
     "github.com/gorilla/mux"
 )
-        
+
+const (
+	   USER_STATUS_NOT_EXISTS = iota
+       USER_STATUS_NORMAL     
+)
+
 type UserInf struct {
+    Status int
     Username string
     Password string
     Email string
@@ -32,7 +38,7 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
     username := r.FormValue("username")
     email := r.FormValue("email")
     password := r.FormValue("password")
-    user := &UserInf { username, password, email}
+    user := &UserInf { USER_STATUS_NORMAL, username, password, email}
     statusCode := http.StatusOK
     
     response := &Response{statusCode, user}
@@ -45,10 +51,39 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
     w.Write(responseJson)
 }
 
+func UserGET(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    username := vars["username"]
+    userMap := map[string]UserInf{
+        "thu": UserInf{USER_STATUS_NORMAL, "thu", "12345", "thu@gmail.com"},
+        "lss": UserInf{USER_STATUS_NORMAL, "lss", "12345", "lss@gmail.com"},
+    }
+    
+    user, ok := userMap[username]
+    if !ok {
+        user = UserInf{Status:USER_STATUS_NOT_EXISTS}
+    }
+    statusCode := http.StatusOK
+    response := &Response{statusCode, user}
+    responseJson, err := json.Marshal(response)
+    if err != nil {
+        fmt.Println(err)
+    }
+    fmt.Println(string(responseJson))
+    w.Write(responseJson)
+}
+
+func SessionPOST(w http.ResponseWriter, r *http.Request) {
+    
+}
+
 func Routes() *mux.Router{
     r := mux.NewRouter()
     // Routes consist of a path and a handler function.
     r.HandleFunc("/api/users", RegisterPOST).Methods("POST")
+    //TODO: Add more strict checking for username
+    r.HandleFunc("/api/users/{username:[0-9a-zA-z._]+}", UserGET).Methods("GET")
+    r.HandleFunc("/api/session", SessionPOST).Methods("POST")
     
     //Route for static files
     r.Handle("/", http.FileServer(http.Dir("./client/")))
