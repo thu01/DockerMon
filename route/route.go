@@ -15,15 +15,20 @@ const (
 )
 
 type UserInf struct {
-    Status int
-    Username string
-    Password string
-    Email string
+    Status int	 `json:"status"` 
+    Username string `json:"username"`
+    Password string	`json:"-"` 
+    Email string    `json:"email"`
 }
 
 type Response struct {
     Status int
     Message interface{}
+}
+
+type HttpStatus struct {
+    Code int
+    Message string
 }
 
 var sessionStore = sessions.NewCookieStore([]byte("GoWebApp-Session-Store"))
@@ -37,6 +42,49 @@ func init() {
     }
 }
 
+func WriteResponse(w http.ResponseWriter, status int, message interface{}) {
+    resp := &Response{status, message}
+    respJson, err := json.Marshal(resp)
+    if err!=nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+    }
+    w.WriteHeader(status)
+    w.Write(respJson)
+}
+
+func GetUserInfo(username string) (UserInf, HttpStatus) {
+    code := http.StatusOK
+    status := HttpStatus{code, http.StatusText(code)}
+    
+    //TODO: Communicate with db
+    userMap := map[string]UserInf{
+        "thu": UserInf{USER_STATUS_NORMAL, "thu", "12345", "thu@gmail.com"},
+        "lss": UserInf{USER_STATUS_NORMAL, "lss", "12345", "lss@gmail.com"},
+    }
+    user, ok := userMap[username]
+    if !ok {
+        code = http.StatusNotFound
+        return UserInf{}, HttpStatus{code, http.StatusText(code)}
+    }
+
+    return user, status
+}
+
+func UserExists(username string) (bool) {
+    //TODO: Communicate with db
+    userMap := map[string]UserInf{
+        "thu": UserInf{USER_STATUS_NORMAL, "thu", "12345", "thu@gmail.com"},
+        "lss": UserInf{USER_STATUS_NORMAL, "lss", "12345", "lss@gmail.com"},
+    }
+    _, ok := userMap[username]
+    if !ok {
+        return false
+    } else {
+        return true
+    }
+}
+
 func NotFound(w http.ResponseWriter, r *http.Request) {
     fmt.Println("NotFound")
     //TODO: only serve index.html for exposed url, otherwise serve error.html
@@ -44,102 +92,76 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterPOST(w http.ResponseWriter, r *http.Request) {
+    //TODO: Add log
     fmt.Println("RegisterPOST")
-    
+    code := http.StatusOK
+   
     username := r.FormValue("username")
     email := r.FormValue("email")
     password := r.FormValue("password")
-    user := &UserInf { USER_STATUS_NORMAL, username, password, email}
-    statusCode := http.StatusOK
-    
-    response := &Response{statusCode, user}
-    
-    responseJson, err := json.Marshal(response)
-    if err != nil {
-        fmt.Println(err)
+
+    if UserExists(username)==true {
+        code = http.StatusConflict
+        WriteResponse(w, code, HttpStatus{code, http.StatusText(code)})
+        return
     }
-    fmt.Println(string(responseJson))
-    w.Write(responseJson)
+    //TODO: Check if email has been used
+    //TODO: Save session
+
+    user := &UserInf { USER_STATUS_NORMAL, username, password, email}
+    WriteResponse(w, code, user)
 }
 
 func UserGET(w http.ResponseWriter, r *http.Request) {
     vars := mux.Vars(r)
     username := vars["username"]
-    userMap := map[string]UserInf{
-        "thu": UserInf{USER_STATUS_NORMAL, "thu", "12345", "thu@gmail.com"},
-        "lss": UserInf{USER_STATUS_NORMAL, "lss", "12345", "lss@gmail.com"},
+
+    user, status := GetUserInfo(username)
+    if status.Code!=http.StatusOK {
+        WriteResponse(w, status.Code, status)
+        return
     }
     
-    user, ok := userMap[username]
-    if !ok {
-        user = UserInf{Status:USER_STATUS_NOT_EXISTS}
-    }
-    statusCode := http.StatusOK
-    response := &Response{statusCode, user}
-    responseJson, err := json.Marshal(response)
-    if err != nil {
-        fmt.Println(err)
-    }
-    fmt.Println(string(responseJson))
-    w.Write(responseJson)
+    WriteResponse(w, status.Code, user)
 }
 
 func SessionPOST(w http.ResponseWriter, r *http.Request) {
-    userMap := map[string]UserInf{
-        "thu": UserInf{USER_STATUS_NORMAL, "thu", "12345", "thu@gmail.com"},
-        "lss": UserInf{USER_STATUS_NORMAL, "lss", "12345", "lss@gmail.com"},
-    }
+    code := http.StatusOK
+    status := HttpStatus{code, http.StatusText(code)}
 
-    statusCode := http.StatusOK
     session, err := sessionStore.Get(r, "GoWebApp-Login-Session");
     if err!=nil {
-        fmt.Println(err)
-        response := &Response{http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)}
-        responseJson, _ := json.Marshal(response)
-        w.Write(responseJson)
+        code = http.StatusInternalServerError
+        WriteResponse(w, code, HttpStatus{code, http.StatusText(code)}) 
         return
     }
     
     username := r.FormValue("username")
     password := r.FormValue("password")
-    for k,v := range session.Values {
-        fmt.Println(k, "=", v)
-    } 
     if session.Values["username"]==username {
-        user, _ := userMap[username]
-        response := &Response{statusCode, user}
-        responseJson, err := json.Marshal(response)
-        if err != nil {
-        	    fmt.Println(err)
+        user, status := GetUserInfo(username)
+        if status.Code!=http.StatusOK {
+            WriteResponse(w, status.Code, status)
         }
-        w.Write(responseJson)
+        
+        WriteResponse(w, status.Code, user)
+        return
+    }
+
+    user, status := GetUserInfo(username)
+    if status.Code!=http.StatusOK {
+        WriteResponse(w, status.Code, status)
+        return
+    }
+	if password != user.Password {
+        code = http.StatusUnauthorized
+        WriteResponse(w, code, HttpStatus{code, http.StatusText(code)}) 
         return
     }
     
-    user, ok := userMap[username]
-    if !ok {
-        statusCode = http.StatusNotFound
-        response := &Response{statusCode, http.StatusText(statusCode)}
-        responseJson, _ := json.Marshal(response)
-        w.Write(responseJson)
-        return
-    }
-    if user.Password != password {
-        statusCode = http.StatusUnauthorized
-        response := &Response{statusCode, http.StatusText(statusCode)}
-        responseJson, _ := json.Marshal(response)
-        w.Write(responseJson)
-        return
-        
-    }
-    response := &Response{statusCode, user}
-    responseJson, err := json.Marshal(response)
-    if err != nil {
-        fmt.Println(err)
-    }
     session.Values["username"]=username
     session.Save(r,w)
-    w.Write(responseJson)
+    WriteResponse(w, status.Code, user)
 }
 
 func Routes() *mux.Router{
