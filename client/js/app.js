@@ -3,7 +3,8 @@
 var app = angular.module('app', [
                                     'ui.router',
                                     'ngResource',
-                                    'ngMessages'
+                                    'ngMessages',
+                                    'ngCookies'
 ]);
 
 app.config([
@@ -19,13 +20,13 @@ app.config([
         });
         
         $stateProvider
-        .state('default',{
-            url: '/',
+        .state('home',{
+            url: '/register',
             templateUrl: '/html/home.html',
             controller: 'RegisterController'
         })
         .state('login', {
-            url: '/login',
+            url: '/',
             templateUrl: 'html/login.html',
             controller: 'LoginController'
         })
@@ -40,16 +41,22 @@ app.config([
 app.factory('UserService', ['$http', '$resource', function UserService($http, $resource) {
     return {
         Register: function(user){
-            console.log(user)
-            var res = $resource('/api/users', user);
-            return res.save().$promise;
-            //return $http.post('http://localhost:8000/api/users', user).then(handleSuccess, handleError);
+            console.log(user);
+            //var res = $resource('/api/users', user);
+            //return res.save().$promise;
+            return $http.post('http://localhost:8000/api/users', user).then(handleSuccess, handleError);
         },
         Login: function(user){
-            console.log(user)
-            var res = $resource('/api/users', user);
-            return res.save().$promise;
-            //return $http.post('http://localhost:8000/api/users', user).then(handleSuccess, handleError);
+            console.log(user);
+            //var res = $resource('/api/users', user);
+            //return res.save().$promise;
+            var config = {
+                method: 'POST',
+                url: 'http://localhost:8000/api/session',
+                data: user,
+                withCredentials: true
+            }
+            return $http(config).then(handleSuccess, handleError);
         }
     }
     

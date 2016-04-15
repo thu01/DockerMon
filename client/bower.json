@@ -10,6 +10,7 @@
     "angular-route": "~1.5.0",
     "angular-ui-router": "latest",
     "angular-resource": "latest",
-    "angular-messages": "latest"
+    "angular-messages": "latest",
+    "angular-cookies": "latest"
   }
 }

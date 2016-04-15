@@ -21,6 +21,17 @@ type UserInf struct {
 	Email    string `json:"email"`
 }
 
+type UserLogin struct {
+    Username string    `json:"username"`
+    Password string `json:"password"`
+}
+
+type UserRegister struct {
+    Username string    `json:"username"`
+    Password string `json:"password"`
+    Email    string `json:"email"`
+}
+
 type Response struct {
 	Status  int
 	Message interface{}
@@ -96,11 +107,17 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RegisterPOST")
 	code := http.StatusCreated
 
-	username := r.FormValue("username")
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+    decoder := json.NewDecoder(r.Body)
+    var userRegister UserRegister
+    err := decoder.Decode(&userRegister)
+    //Invalid format
+    if err != nil {
+        code = http.StatusBadRequest
+		WriteResponse(w, code, HttpStatus{code, http.StatusText(code)})
+		return
+    }
 
-	if UserExists(username) == true {
+	if UserExists(userRegister.Username) == true {
 		code = http.StatusConflict
 		WriteResponse(w, code, HttpStatus{code, http.StatusText(code)})
 		return
@@ -108,7 +125,7 @@ func RegisterPOST(w http.ResponseWriter, r *http.Request) {
 	//TODO: Check if email has been used
 	//TODO: Save session
 
-	user := &UserInf{USER_STATUS_NORMAL, username, password, email}
+	user := &UserInf{USER_STATUS_NORMAL, userRegister.Username, userRegister.Password, userRegister.Email}
 	WriteResponse(w, code, user)
 }
 
@@ -130,9 +147,10 @@ func UserPOST(w http.ResponseWriter, r *http.Request) {
 }
 
 func SessionPOST(w http.ResponseWriter, r *http.Request) {
+    fmt.Println("SessionPOST")
 	code := http.StatusCreated
 	status := HttpStatus{code, http.StatusText(code)}
-
+    
 	session, err := sessionStore.Get(r, "GoWebApp-Login-Session")
 	if err != nil {
 		code = http.StatusInternalServerError
@@ -140,10 +158,18 @@ func SessionPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	if session.Values["user"] == username {
-		user, status := GetUserInfo(username)
+    decoder := json.NewDecoder(r.Body)
+    var userLogin UserLogin
+    err = decoder.Decode(&userLogin)
+    //Invalid format
+    if err != nil {
+        code = http.StatusBadRequest
+		WriteResponse(w, code, HttpStatus{code, http.StatusText(code)})
+		return
+    }
+
+	if session.Values["user"] == userLogin.Username {
+		user, status := GetUserInfo(userLogin.Username)
 		if status.Code != http.StatusOK {
 			WriteResponse(w, status.Code, status)
 		}
@@ -151,19 +177,20 @@ func SessionPOST(w http.ResponseWriter, r *http.Request) {
 		WriteResponse(w, status.Code, user)
 		return
 	}
-
-	user, status := GetUserInfo(username)
+    
+	user, status := GetUserInfo(userLogin.Username)
 	if status.Code != http.StatusOK {
 		WriteResponse(w, status.Code, status)
 		return
 	}
-	if password != user.Password {
+
+	if userLogin.Password != user.Password {
 		code = http.StatusUnauthorized
 		WriteResponse(w, code, HttpStatus{code, http.StatusText(code)})
 		return
 	}
 
-	session.Values["user"] = username
+	session.Values["user"] = userLogin.Username
 	session.Save(r, w)
 	WriteResponse(w, code, user)
 }
